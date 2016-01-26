@@ -1,5 +1,3 @@
-# LIFE - Lifelogging recording format 
-
 This repository contains the most up-to-date specification for the LIFE format (latest version as self-contained `life.md` and below), and `life.py`, a python script that provides parsing capabilities for LIFE files, for convenience. 
 
 
