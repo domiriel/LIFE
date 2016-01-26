@@ -3,6 +3,11 @@ import datetime
 import time
 
 
+# Partial implementation of LIFE file format. Missing features:
+#
+#  * sub-span annotations
+#  * place categories that are valid only from the moment they are presented in the file
+
 
 ############################################################
 ################  Auxiliary Functions  #####################
@@ -104,7 +109,7 @@ class Life:
         self.nameswaps={}        # names that have changed for the same location
         self.locations={}        # known locations for places (lat, lon)
         self.default_timezone=default_timezone  # the default timezone
-        
+
         if filename:
             self.from_file(filename)
 
@@ -116,24 +121,24 @@ class Life:
         """Populates instance from a .life file"""
         curday=None
         curdate=None
-        curtimezone = self.default_timezone        
+        curtimezone = self.default_timezone
         linecount = 0
         for line in open(filename,"rt").xreadlines():
             linecount += 1
             try:
-                line=line.strip().lower()                
+                line=line.strip().lower()
                 line = line.split(";")[0]
                 if len(line)==0:
                     pass
                 elif line[:2]=="--":
                     if curday:
-                        self.days.append(curday)                    
+                        self.days.append(curday)
                     curdate = line[2:].strip()
-                    curday = Day(curdate)                    
+                    curday = Day(curdate)
                 elif line[:3] == "utc":
                     curtimezone = line
-                elif line[:4] == "@utc":                    
-                    curtimezone = [curtimezone,line[1:]]                    
+                elif line[:4] == "@utc":
+                    curtimezone = [curtimezone,line[1:]]
                 elif line[0]=="@":
                     self.parseMeta(line[1:],curdate)
                 else:
@@ -160,7 +165,7 @@ class Life:
             a=a.strip()
             b=b.strip()
             self.subplaces[b]=self.subplaces.get(b,[])+[a]
-            self.superplaces[a]=self.superplaces.get(a,[])+[b]            
+            self.superplaces[a]=self.superplaces.get(a,[])+[b]
         elif ":" in line: # category
             a,b = line.split(":")
             a=a.strip()
@@ -223,7 +228,7 @@ class Life:
     def category_places(self,cat):
         """returns list of all the places with a given category"""
         return self.categories.get(cat,[])
-    
+
 
     def all_places(self):
         """returns list of all visited places"""
@@ -264,7 +269,7 @@ class Life:
         of minutes
         """
         tmp = []
-        places = self.time_at_all_places()        
+        places = self.time_at_all_places()
         for p in places.keys():
             tmp.append((p,places[p]))
         tmp.sort((lambda x,y: cmp(x[1] ,y[1])))
@@ -504,11 +509,11 @@ class Span:
             self.place=(self.place.split("->")[0].strip(),self.place.split("->")[1].strip())
             # if a single place, store string. If 'indoors trip', add list of [start,end]
             # That will be a 'multiplace'
-        if type(timezone)==list: 
+        if type(timezone)==list:
             self.start_timezone=timezone_offset(timezone[0])
             self.end_timezone=timezone_offset(timezone[1])
         else:
-            self.start_timezone=self.end_timezone=timezone_offset(timezone)        
+            self.start_timezone=self.end_timezone=timezone_offset(timezone)
 
 
     def parse_place(self,to_parse):
@@ -544,7 +549,7 @@ class Span:
                     acc=acc+c
             else:
                 acc=acc+c
-        if acc:            
+        if acc:
             self.place=acc
         if self.tags=="":
             self.tags=[]
@@ -608,7 +613,7 @@ class Span:
         #print "|",x,"|", self.start,self.end, self.start_timezone
         if x<0:
             day = yesterday(self.day)
-            x=x+60*24            
+            x=x+60*24
         elif x>(60*24):
             day = tomorrow(self.day)
             x=x-60*24
@@ -621,10 +626,10 @@ class Span:
         """Return end time in UTC timezone in ISO format
         (eg: 2015-02-12T23:32:00Z)
         """
-        x = self.end-self.end_timezone*60        
+        x = self.end-self.end_timezone*60
         if x<0:
             day = yesterday(self.day)
-            x=x+60*24            
+            x=x+60*24
         elif x>(60*24):
             day = tomorrow(self.day)
             x=x-60*24

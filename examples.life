@@ -1,0 +1,129 @@
+; LIFE for John Doe
+
+; First couple of days: the simples use case. Just record when you were somewhere
+--2016_01_01
+UTC                           ;setting the "default timezone"
+0000-1231: home
+1245-1356: McDonalds          ;quite sad, lunching on a mcdonalds on New Year's Day...
+1413-2359: home
+
+--2016_01_02
+0000-1002: home
+1139-1602: home               ;went for a walk and came back home
+1703-1830: shopping mall
+1830-2045: beef delight
+2201-2359: home
+
+@beef delight<shopping mall   ; the restaurant is inside the mall!
+
+
+
+; now, we'll see some tagging and annotation. For instance, John decides to tag where he eats, 
+; and which movies he watches
+
+--2016_01_03
+0000-0721: home
+0801-1202: work
+1223-1303: Pizza Place [lunch]                  ; tagged as a lunch place
+1321-1802: work
+1827-2101: Stellar Cinemas [movies] {Deadpool}  ; tagged as movie theater, semantics tells which movie  
+2107-2143: burger king [dinner]                 ; tagged as a dinner place
+2227-2359: home
+
+--2016_01_04
+0000-0725: home
+0807-1215: work
+1231-1330: Le Bistro [lunch]
+1342-1812: work
+1837-1845: supermarket
+1855-2359: home   [dinner]
+
+
+; next day, John will travel by plane to meet a client
+
+--2016_01_05
+0000-0810: home
+0000-0912: LIS                 ; Lisbon airport
+@UTC+2                         ; in the next span, the first time will be UTC, the second UTC+2!
+1055-1655: LIS->ATH  [lunch]   ; The trip was actually only 4 hours, but we changed timezones. Had lunch on board!
+1655-1732: ATH
+1901-2359: hotel [dinner]
+
+   
+; next day, we're still in UTC+2
+--2016_01_06
+0000-0801: hotel
+0831-1243: client
+1301-1358: QuickFoods [lunch]
+1403:1754: client
+2003-2359: hotel [dinner]
+
+
+; heading back home! New timezone change!
+--2016_01_07
+0000-1143: hotel
+1232-1403: ATH [lunch]   ; had lunch at the airport
+@UTC
+1404-1632: ATH->LIS      ; 4 hour trip again, but appears to be two due to timezone change
+1632-1743: LIS
+1831-2359: home
+
+
+
+; John now decides to annotate his mode of transportation. First, using tags on trips. Not relevant when he
+; changed transport, only that he used different mods
+--2016_01_08
+0000-0715: home
+0715-0801: home->work [walk|bus]
+0801-1216: work
+1216-1229: work->Le Bistro [walk]
+1229-1342: Le Bistro [lunch]
+1342-1358: Le Bistro->work [walk]
+1358-1812: work
+1812-1837: work->home [walk|bus]
+1837-2359: home   [dinner]
+
+
+
+; Now using a different trip line for each leg of the trip, to know where and when he changed mode of transportation
+--2016_01_09
+0000-0705: home
+0705-0712: home->bus stop close to home [walk]
+0712-0734: bus stop close to home 
+0734-0801: bus stop close to home -> bus stop close to work [bus|bus:767]  ; rode bus 767
+0801-0811: bus stop close to work -> work [walk]
+0811-1211: work
+1211-1219: work->Le Bistro [walk]
+1219-1331: Le Bistro [lunch]
+1331-1350: Le Bistro->work [walk]
+1350-1822: work
+1822-1824: work->bus stop close to work [walk]
+1824-1825: bus stop close to work
+1825-1841: bus stop close to work->bus stop close to home [bus|bus:767]
+1841-1848: bus stop close to home->home [walk]
+1848-2359: home   [dinner]
+
+; 'bus:767' is a normal tag. John decided that he would annotate all bus lines using the 'bus:<number>' convention
+
+
+
+; John decided he doesn't need to know the places where he gets on buses, etc. after all.
+; so he'll use simply the sub-span annotations
+
+--2016_01_09
+0000-0705: home
+0705-0811: home->work
+   0705-0712: [walk]
+   0734-0801: [bus|bus:767]
+   0801-0811: [walk]
+0811-1211: work
+1211-1219: work->Le Bistro [walk]
+1219-1331: Le Bistro [lunch]
+1331-1350: Le Bistro->work [walk]
+1350-1822: work
+1822-1848: work->home
+   1822-1824: [walk]
+   1825-1841: [bus|bus:767]
+   1841-1848: [walk]
+1848-2359: home   [dinner]
+   2201: [water:33cl]          ; drank 33cl of water at 2201
