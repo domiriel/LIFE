@@ -1,7 +1,3 @@
-This repository contains the most up-to-date specification for the LIFE format (latest version as self-contained `life.md` and below), and `life.py`, a python script that provides parsing capabilities for LIFE files, for convenience. 
-
-
-
 LIFE File Format
 ================
 Life 1.1 - 26 Jan 2016   
@@ -297,7 +293,7 @@ Below is a sample LIFE file. It shows several use cases for the format and, as s
     ; John decided he doesn't need to know the places where he gets on buses, etc. after all.
     ; so he'll use simply the sub-span annotations
 
-    --2016_01_09
+    --2016_01_10
     0000-0705: home
     0705-0811: home->work
        0705-0712: [walk]
