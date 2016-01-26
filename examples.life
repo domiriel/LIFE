@@ -110,7 +110,7 @@ UTC                           ;setting the "default timezone"
 ; John decided he doesn't need to know the places where he gets on buses, etc. after all.
 ; so he'll use simply the sub-span annotations
 
---2016_01_09
+--2016_01_10
 0000-0705: home
 0705-0811: home->work
    0705-0712: [walk]
