@@ -18,7 +18,7 @@ UTC                           ;setting the "default timezone"
 
 
 
-; now, we'll see some tagging and annotation. For instance, John decides to tag where he eats, 
+; now, we'll see some tagging and annotation. For instance, John decides to tag where he eats,
 ; and which movies he watches
 
 --2016_01_03
@@ -26,7 +26,7 @@ UTC                           ;setting the "default timezone"
 0801-1202: work
 1223-1303: Pizza Place [lunch]                  ; tagged as a lunch place
 1321-1802: work
-1827-2101: Stellar Cinemas [movies] {Deadpool}  ; tagged as movie theater, semantics tells which movie  
+1827-2101: Stellar Cinemas [movies] {Deadpool}  ; tagged as movie theater, semantics tells which movie
 2107-2143: burger king [dinner]                 ; tagged as a dinner place
 2227-2359: home
 
@@ -49,13 +49,13 @@ UTC                           ;setting the "default timezone"
 1655-1732: ATH
 1901-2359: hotel [dinner]
 
-   
+
 ; next day, we're still in UTC+2
 --2016_01_06
 0000-0801: hotel
 0831-1243: client
 1301-1358: QuickFoods [lunch]
-1403:1754: client
+1403-1754: client
 2003-2359: hotel [dinner]
 
 
@@ -89,7 +89,7 @@ UTC                           ;setting the "default timezone"
 --2016_01_09
 0000-0705: home
 0705-0712: home->bus stop close to home [walk]
-0712-0734: bus stop close to home 
+0712-0734: bus stop close to home
 0734-0801: bus stop close to home -> bus stop close to work [bus|bus:767]  ; rode bus 767
 0801-0811: bus stop close to work -> work [walk]
 0811-1211: work

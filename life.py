@@ -40,7 +40,7 @@ def timezone_offset(timezone):
 
     ex: timezone_offset("UTC+3") -> 3
     """
-    timezone = timezone.lower()
+    timezone = timezone.strip().lower()
     if timezone=="utc":
         return 0
     else:
@@ -117,41 +117,52 @@ class Life:
     # TODO: Add days programatically (not from file)
     # TODO: Output .life file (to_file method)
 
-    def from_file(self,filename):
-        """Populates instance from a .life file"""
+    def from_string(self, content):
+        """Loads from a string"""
+        if type(content) is str:
+            content = content.replace('\r\n', '\n').split('\n')
+
         curday=None
         curdate=None
         curtimezone = self.default_timezone
         linecount = 0
-        for line in open(filename,"rt").xreadlines():
+        for line in content:
             linecount += 1
-            try:
-                line=line.strip().lower()
-                line = line.split(";")[0]
-                if len(line)==0:
-                    pass
-                elif line[:2]=="--":
-                    if curday:
-                        self.days.append(curday)
-                    curdate = line[2:].strip()
-                    curday = Day(curdate)
-                elif line[:3] == "utc":
-                    curtimezone = line
-                elif line[:4] == "@utc":
-                    curtimezone = [curtimezone,line[1:]]
-                elif line[0]=="@":
-                    self.parseMeta(line[1:],curdate)
-                else:
-                    dates,descr = line.split(":")
-                    descr=descr.lower()
-                    curday.add_span(Span(curdate,dates[:4],dates[-4:],descr.strip(),curtimezone))
-                    if type(curtimezone) == list:
-                        curtimezone = curtimezone[1]
-            except:
-                print "Failed: ",line
+            # try:
+            line = line.strip().lower()
+            line = line.split(";")[0]
+            print("'%s'" % line)
+            if len(line)==0:
+                pass
+            elif line[:2]=="--":
+                if curday:
+                    self.days.append(curday)
+                curdate = line[2:].strip()
+                curday = Day(curdate)
+            elif line[:3] == "utc":
+                curtimezone = line
+            elif line[:4] == "@utc":
+                curtimezone = [curtimezone,line[1:]]
+            elif line[0]=="@":
+                self.parseMeta(line[1:],curdate)
+            else:
+                splited = line.split(":")
+                dates = splited[0]
+                descr = ":".join(splited[1:])
+                descr=descr.lower()
+                curday.add_span(Span(curdate,dates[:4],dates[-4:],descr.strip(),curtimezone))
+                if type(curtimezone) == list:
+                    curtimezone = curtimezone[1]
+            # except:
+            #     print("Line %d failed: %s" % (linecount, line))
         if curday:
             self.days.append(curday)
 
+    def from_file(self,filename):
+        """Populates instance from a .life file"""
+        with open(filename, 'r') as f:
+            self.from_string(f)
+        # self.from_string(open(filename,"rt").xreadlines())
 
     def parseMeta(self, line, date):
         """Parses meta-commands ("@<command>")"""
@@ -522,6 +533,7 @@ class Span:
         context = ""
         self.tags=""
         self.semantics=""
+        self.place = ""
         for c in to_parse:
             if c=="[":
                 if acc:
@@ -559,7 +571,9 @@ class Span:
             self.semantics=[]
         else:
             self.semantics=[x.strip() for x in self.semantics.split("|")]
-        self.place = self.place.strip()
+
+        if self.place:
+            self.place = self.place.strip()
 
 
     def multiplace(self):
