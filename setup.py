@@ -1,4 +1,4 @@
-from distutils.core import setup
+﻿from distutils.core import setup
 setup(
   name = 'life',
   packages = ['life'], # this must be the same as the name above
@@ -7,7 +7,7 @@ setup(
   author = 'Daniel Gonçalves',
   author_email = 'daniel.goncalves@inesc-id.pt',
   url = 'https://github.com/domiriel/LIFE', 
-  download_url = 'https://github.com/peterldowns/mypackage/tarball/0.1', # I'll explain this in a second
+  download_url = 'https://github.com/domiriel/LIFE/archive/1.1.zip',
   keywords = ['lifelogging', 'location', 'travel', 'stays', 'movement', 'gps', 'tracking', 'quantified self'],
   classifiers = [],
 )
