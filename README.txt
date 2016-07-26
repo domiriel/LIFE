@@ -1,0 +1,1 @@
+life package. See README.md for details on format and usage
