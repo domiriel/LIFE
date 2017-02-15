@@ -187,7 +187,7 @@ Below is a sample LIFE file. It shows several use cases for the format and, as s
     --2016_01_01
     UTC                           ;setting the "default timezone"
     0000-1231: home
-    1245-1356: McDonalds          ;quite sad, lunching on a mcdonalds on New Year's Day...
+    1245-1356: McDonalds          ;quite sad, lunching at a mcdonalds on New Year's Day...
     1413-2359: home
 
     --2016_01_02
