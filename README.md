@@ -13,15 +13,15 @@ This document describes the syntax of the LIFE file format. This format is meant
 Concepts
 --------
 
-Lifelogging is the practice of recording information about oneself. There are many things that lifelogging practitioners record (food, health, mood, sleep, etc.). One of those are locations and activities performed throughout the day. The LIFE format gives us a standard way to record this information which is simple yet expressive, stemming from years of lifelogging practice.
+Lifelogging is the practice of recording information about oneself. Many things lifelogging practitioners record (food, health, mood, sleep, etc.). One of those are the locations and activities performed throughout the day. The LIFE format gives us a standard way to record this information which is simple yet expressive, stemming from years of lifelogging practice.
 
-The format is centered around *days*, a given calendar day. For each day, a number of *spans* describe where the user during a particular time interval. Intervals for which no span is specified are considered to be *travelling time*. Another way to look at it is that a span represents a time where you were "indoors", for some time at some place doing something meaningful, and their complement is when you were walking or driving somewhere. 
+The format is centered around *days*, a given calendar day. For each day, several _spans_ describe where the user is during a particular time interval. Intervals for which no span is specified are considered to be *travelling time*. Another way to look at it is that a span represents a time where you were "indoors", for some time at some place doing something meaningful, and their complement is when you were walking or driving somewhere. 
 
-Spans mention *places*. A place is somewhere that you were at and it is usually described in a personally relevant way. A place is assumed to be tied to a specific physical location. Hence, if there are two 'Tesco' supermarkets in two different streets, the place names should be difference (e.g.: 'Tesco-Foo St.' and 'Tesco-Bar St.').
+Spans mention *places*. A place is somewhere that you were at and it is usually described in a personally relevant way. A place is assumed to be tied to a specific physical location. Hence, if there are two 'Tesco' supermarkets on two different streets, the place names should be different (e.g.: 'Tesco-Foo St.' and 'Tesco-Bar St.').
 
-A span can also represent a *trip* between two places. Implicitly, there is a trip between any two spans in differnt places. However, if you need to annotate some specific info about the trip itself, a trip span can be used.
+A span can also represent a *trip* between two places. Implicitly, there is a trip between any two spans in different places. However, if you need to annotate some specific info about the trip itself, a trip span can be used.
 
-Each span can be annotated with tags and a personally relevant comment string that can be used, for instance, for short descriptions of what was the purpose of that span (a movie that was seen, person that was met, etc.)
+Each span can be annotated with tags and a personally relevant comment string that can be used, for instance, for short descriptions of what was the purpose of that span (a movie that was seen, the person that was met, etc.)
 
 Finally, LIFE gives support for several meta information regarding the categories of places, their physical location, place inclusion (a restaurant inside a shopping mall, for instance), etc.
 
@@ -31,7 +31,7 @@ Syntax
 
 ### Day 
 
-One day is represented by a header indicating the date. The format for the date is `"yyyy_mm_dd"`, and it must be preceeded by two hyphens (`"--"`). After the header, there should be a line per span, as described below. All spans should be contiguous (no blank lines in between). There should be spans covering the entire day.
+One day is represented by a header indicating the date. The format for the date is `"yyyy_mm_dd"`, and it must be preceded by two hyphens (`"--"`). After the header, there should be a line per span, as described below. All spans should be contiguous (no blank lines in between). There should be spans covering the entire day.
 
 ---
 ### Span
@@ -40,7 +40,7 @@ A span, in its simplest form, is represented as follows:
 
     <start>-<end>: <place>
 
-`<start>` and `<end>` are the starting and finishing time of the span. Precision is down to the minute. They follow military time standard, `hhmm`: 3:32PM becomes `1532`. 8:21am is `0832` and so on. Times begin at `0000` and end at `2359`. 
+`<start>` and `<end>` are the starting and finishing times of the span. Precision is down to the minute. They follow the military time standard, `hhmm`: 3:32PM becomes `1532`. 8:21 am is `0832`` and so on. Times begin at `0000` and end at `2359`. 
 
  `<place>` can be any string, for a personally relevant place name ("home", "brother's home", "sam's school", etc.). A complete span could be:
 
@@ -48,11 +48,11 @@ A span, in its simplest form, is represented as follows:
 
 #### Tags 
 
-Optionally, a set of tags can be specified by enclosing them im square brackets ("`[]`"). Different tags should be separated with a pipe character ("`|`").  The tags can be qualified with one or more values (separated by commas), specifying particular properties for that instance of the tag. To do so just write them after the tag, using a semicolon as a separator. For instance, if you are using a tag that `lunch` to represent that you had lunch at a certain place, you could further specify what you ate using a value:
+Optionally, a set of tags can be specified by enclosing them in square brackets ("`[]`"). Different tags should be separated with a pipe character ("`|`").  The tags can be qualified with one or more values (separated by commas), specifying particular properties for that instance of the tag. To do so just write them after the tag, using a semicolon as a separator. For instance, if you are using a tag that `lunch` to represent that you had lunch at a certain place, you could further specify what you ate using a value:
 
     1245-1332: Pop's Diner [lunch:chicken,french fries]
 
-Another usecase would be, for instaance, to record going to the movies and the movie you watched:
+Another use case would be, for instance, to record going to the movies and the movie you watched:
 
     2124-2349: neighborhood cinema [movies:Star Wars: The Force Awakens|leisure]
 
@@ -73,7 +73,7 @@ A trip is represented by including the departure and arrival place, separated by
     1032-1045: saldanha station->rossio station
     1045-1047: rossio station
 
-You can use tags and semantics in trip spans as for any other span. An obvious usecase here would be to annotate mode of transportation:
+You can use tags and semantics in trip spans as for any other span. An obvious use case here would be to annotate the mode of transportation:
 
     1032-1045: saldanha station->rossio station [subway]
 
@@ -82,9 +82,9 @@ You can use tags and semantics in trip spans as for any other span. An obvious u
 ---
 ### Timezone
 
-Sometimes, when moving, we change timezones. We can specify this by indicating the timezone directly in the file. Timezones are represented as offsets from UTC and take the for of `UTC(+/-)<offset>`. For instance, `UTC+2`, `UTC-5`, etc. are all valid. You can also use `UTC` alone, for that timezone. Timezone commands should appear inside a day and are in effect from that moment on, for all spans of that day and subsequent ones, until another timezone command is found. So, usually, in the first day of a file, you'd start with a line for the timezone where you usually are in.
+Sometimes, when moving, we change time zones. We can specify this by indicating the timezone directly in the file. Timezones are represented as offsets from UTC and take the for of `UTC(+/-)<offset>`. For instance, `UTC+2`, `UTC-5`, etc. are all valid. You can also use `UTC` alone, for that timezone. Timezone commands should appear inside a day and are in effect from that moment on, for all spans of that day and subsequent ones, until another timezone command is found. So, usually, on the first day of a file, you'd start with a line for the timezone where you usually are in.
 
-Sometimes, a timezone changes as the result of a trip. For instance, you can board a plane in one timezone and leave it in another. In that case, the correct choice is to see that the departure place of the trip is in one timezone and the finishing place in another. We can specify this by starting an `UTC` command with an `@` sign. So, in the following case, `LIS Airport` would be in `UTC` and `CDG Airport` in `UTC+1`. All spans after the trip are also in `UTC+1`.
+Sometimes, a timezone changes as the result of a trip. For instance, you can board a plane in one time zone and leave it in another. In that case, the correct choice is to see that the departure place of the trip is in one time zone and the finishing place in another. We can specify this by starting a `UTC` command with an `@` sign. So, in the following case, `LIS Airport` would be in `UTC` and `CDG Airport` in `UTC+1`. All spans after the trip are also in `UTC+1`.
 
 
     --2011_05_23
@@ -96,7 +96,7 @@ Sometimes, a timezone changes as the result of a trip. For instance, you can boa
     1153-2359: Hotel Foo
 
 
-Please note that daylight savings time will change your timezone. So, the day they start (or cease) being into effect you should explicitly note this change in the file:
+Please note that daylight savings time will change your time zone. So, the day they start (or cease) being into effect you should explicitly note this change in the file:
 
     --2011_03_29
     UTC+1
@@ -110,13 +110,13 @@ Please note that daylight savings time will change your timezone. So, the day th
 ----
 ### Meta Commands
 
-There are several commands that, while not describing a span, convey information that helps understand them. They must be entered *outside* of a day. They all start with an at sign (`@`). Spaces are allowed as padding around the place names and other parameters. Unless otherwise noted, `@` commands should be global: regardless of where they appear in the file, they apply to all days/spans in it.
+There are several commands that, while not describing a span, convey information that helps one understand them. They must be entered *outside* of a day. They all start with an at sign (`@`). Spaces are allowed as padding around the place names and other parameters. Unless otherwise noted, `@` commands should be global: regardless of where they appear in the file, they apply to all days/spans in it.
 
 
 
 #### Place Inclusion
 
-Some places are within other, e.g. a particular store inside a shopping mall. How to record it? If you record the store as its own place, you wouldn't know you were in the mall at that time. If you record the mall, information about where you actually went in there would be lost. To circumvent this problem, we can specify place inclusion by connecting a sub and super-place with a `<` sign:
+Some places are within others, e.g. a particular store inside a shopping mall. How to record it? If you record the store as its own place, you wouldn't know you were in the mall at that time. If you record the mall, information about where you actually went in there would be lost. To circumvent this problem, we can specify place inclusion by connecting a sub and super-place with a `<` sign:
 
     @a store in the mall<the mall
 
@@ -160,7 +160,7 @@ Within the definition of a day, you can add notes by starting a line with `>`. T
 ---
 ### Comments
 
-Comments can be entered into the file by preceeding them with a semicolon (`;`). Everything after it will be considered to be a comment.
+Comments can be entered into the file by preceding them with a semicolon (`;`). Everything after it will be considered to be a comment.
 
 
 ### File Inclusion
@@ -173,8 +173,8 @@ After a while, your LIFE file will get big. You can minimize the problem by spli
 
 ## Usage
 
-The point of a LIFE file is to record a person's live from their point of view. Things that are personally relevant, in the way they are so. It should usually begin with a first day, the first line of which will be the default timezone (don't forget to take into account the daylight savings, if relevant). Then we will find a succession of days. Each day should have a span for whenever the user was in some place. The names of the places, as stated above, aren't necessarily the "official" names, but rather what that place means for the user. Place Inclusion can be used to tie those names to the "official" ones if needed.
+The point of a LIFE file is to record a person's life from their point of view. Things that are personally relevant, in the way they are so. It should usually begin with a first day, the first line of which will be the default timezone (don't forget to take into account daylight savings, if relevant). Then we will find a succession of days. Each day should have a span for whenever the user was in some place. The names of the places, as stated above, aren't necessarily the "official" names, but rather what that place means for the user. Place Inclusion can be used to tie those names to the "official" ones if needed.
 
-If done properly, from a LIFE file a user should be able to tell where they were at any given moment in time and (if annotated with semantics) what was the purpose of the visit. Categories and tags can also help with this: a place categorized as a restaurant will probably be visited for a meal. It is up to each user to decide what different tags, categories, etc. represent. One person coud use tags to annotate the names of people met at a given place. Another could use it to note where dinner or lunch were had, etc.
+If done properly, from a LIFE file a user should be able to tell where they were at any given moment in time and (if annotated with semantics) what was the purpose of the visit. Categories and tags can also help with this: a place categorized as a restaurant will probably be visited for a meal. It is up to each user to decide what different tags, categories, etc. represent. One person could use tags to annotate the names of people who met at a given place. Another could use it to note where dinner or lunch was had, etc.
 
 One important thing is to maintain things consistent. The same place name should be used recurrently to represent the same place, for instance. Failure to do this may make it hard to compare across spans. This is easier than it appears since for most people there will be a somewhat small set of recurrently visited places (home, work, etc.) and a few that are seldom visited. The recurrent ones will quickly be mechanized. And, of course, tools can be developed to help maintain a LIFE file.
