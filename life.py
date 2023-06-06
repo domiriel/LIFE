@@ -1,12 +1,20 @@
+# -*- coding: utf-8 -*-
 import os
 import datetime
 import time
+import copy
 
-
-# Partial implementation of LIFE file format. Missing features:
-#
-#  * sub-span annotations
-#  * place categories that are valid only from the moment they are presented in the file
+###############################################################################
+#####################  LIFE format reader/writer v2.1  ########################
+###############################################################################
+# This is a Python module to read and write LIFE files. LIFE is a simple text # 
+# format to represent a life, as a set of days, each with a set of spans.     #
+# Spans are time intervals during which the person was somewhere. See         #
+# https://github.com/domiriel/LIFE for info on the file format and usage      #
+###############################################################################
+# This module is released under the MIT license.                              #
+# (c) 2016-2023 Daniel Gonçalves                                              #
+###############################################################################
 
 
 ############################################################
@@ -40,7 +48,7 @@ def timezone_offset(timezone):
 
     ex: timezone_offset("UTC+3") -> 3
     """
-    timezone = timezone.strip().lower()
+    timezone = timezone.lower()
     if timezone=="utc":
         return 0
     else:
@@ -101,105 +109,211 @@ def yesterday(last_date):
 
 class Life:
     """A set of days, encompasing a life, plus meta-commands"""
-    def __init__(self, filename=None, default_timezone="UTC"):
+    def __init__(self, filename=None, default_timezone="UTC", debug=False):
         self.days=[]             # the list of days
         self.categories={}       # the place categories
         self.subplaces = {}      # the subplaces
         self.superplaces = {}    # the superplaces (reciprocal of subplaces)
         self.nameswaps={}        # names that have changed for the same location
-        self.locations={}        # known locations for places (lat, lon)
+        self.locationswaps={}    # different things at the same place
+        self.coordinates={}        # known locations for places (lat, lon)
         self.default_timezone=default_timezone  # the default timezone
-
+        self.basepath=""
+        self.debug=debug
+        
         if filename:
             self.from_file(filename)
 
+    def __iter__(self):
+        for d in self.days:
+            yield d
 
+
+    def __getitem__(self, ndx):
+        if type(ndx)==int:
+            return self.days[ndx]
+        else:
+            return self.day_at_date(ndx)
+
+
+    def day_at_date(self,date):
+        """Return day for a particular date."""
+        for d in self.days:
+            if d.date==date:
+                return d
+            elif d.date>date:
+                return None
+        return None
+
+    
     # TODO: Add days programatically (not from file)
     # TODO: Output .life file (to_file method)
+        
+    def update_day_from_string(self, date, content):
+        """Updates day with content from a LIFE string"""
+        for i in range(len(self.days)):
+            if self.days[i].date == date:
+                self.days[i] = self.from_string(content, replace=True)
 
-    def from_string(self, content):
-        """Loads from a string"""
+
+    def remove_day(self, date):
+        """Removes day from LIFE"""
+        for i in range(len(self.days)):
+            if self.days[i].date == date:
+                self.days.pop(i)
+                return
+
+
+    def from_string(self, content, recursive=False):
+        """Populates instance from a .life file"""
+
         if type(content) is str:
             content = content.replace('\r\n', '\n').split('\n')
 
-        curday=None
-        curdate=None
-        curtimezone = self.default_timezone
-        linecount = 0
+        if not recursive:
+            self.curday=None
+            self.curdate=None
+            self.curtimezone = self.default_timezone            
         for line in content:
-            linecount += 1
             try:
-                line = line.strip().lower()
+                line=line.strip().lower()                
                 line = line.split(";")[0]
-                print("'%s'" % line)
                 if len(line)==0:
                     pass
                 elif line[:2]=="--":
-                    if curday:
-                        self.days.append(curday)
-                    curdate = line[2:].strip()
-                    curday = Day(curdate)
+                    if self.curday:
+                        self.days.append(self.curday)                    
+                    self.curdate = line[2:].strip()
+                    self.curday = Day(self.curdate)    
                 elif line[:3] == "utc":
-                    curtimezone = line
-                elif line[:4] == "@utc":
-                    curtimezone = [curtimezone,line[1:]]
+                    self.curtimezone = line
+                elif line[:4] == "@utc":                    
+                    self.curtimezone = [self.curtimezone,line[1:]]                    
                 elif line[0]=="@":
-                    self.parseMeta(line[1:],curdate)
+                    self.parseMeta(line[1:],self.curdate)
+                elif line[0]==">":                    
+                    self.curday.add_note(line[1:].strip())
                 else:
-                    splited = line.split(":")
-                    dates = splited[0]
-                    descr = ":".join(splited[1:])
+                    dates,descr = line[:line.find(":")],line[line.find(":")+1:]
                     descr=descr.lower()
-                    curday.add_span(Span(curdate,dates[:4],dates[-4:],descr.strip(),curtimezone))
-                    if type(curtimezone) == list:
-                        curtimezone = curtimezone[1]
-            except:
-                raise TypeError("Failed to parse line %d: '%s'" % (linecount, line))
-        if curday:
-            self.days.append(curday)
+                    self.curday.add_span(Span(self.curdate,dates[:4],dates[-4:],descr.strip(),self.curtimezone))
+                    if type(self.curtimezone) == list:
+                        self.curtimezone = self.curtimezone[1]
+            except ArithmeticError:
+                print("Failed: ",line)
+        if self.curday:
+            self.days.append(self.curday)
+        if not recursive:
+            del(self.curday)
+            del(self.curdate)
+            del(self.curtimezone)            
 
-    def from_file(self,filename):
+
+
+    def from_file(self, filename, recursive=False):
         """Populates instance from a .life file"""
-        with open(filename, 'r') as f:
-            self.from_string(f)
-        # self.from_string(open(filename,"rt").xreadlines())
+        self.from_string(open(filename,"r",encoding="utf8").read(), recursive=recursive)
+       
 
-    def parseMeta(self, line, date):
+
+    # TODO: From MySteps. Unsure if this works as is, most likely not. Needs to preserve comments, etc.
+    def to_file(self, path):
+        """Creates a file in the LIFE format"""
+        f = open(path, "w")
+        f.write(repr(self))
+        f.close()
+
+
+    def parseMeta(self, line, date):        
         """Parses meta-commands ("@<command>")"""
-        if ">>" in line:  # A location that changed names ("@oldname>>newname")
+        if ">>>" in line:  # Something new in the same location ("@oldname>>>newname")
+            a,b = line.split(">>>")
+            a=a.strip()
+            b=b.strip()
+            self.locationswaps[a]=(b, date)
+        elif ">>" in line:  # A location that changed names ("@oldname>>newname")
             a,b = line.split(">>")
             a=a.strip()
             b=b.strip()
-            self.nameswaps[date]=self.nameswaps.get(date,[])+[(a,b)]
+            self.nameswaps[a]=(b, date)
         elif "<" in line: # subplace ("@subplace<superplace")
             a,b = line.split("<")
             a=a.strip()
             b=b.strip()
             self.subplaces[b]=self.subplaces.get(b,[])+[a]
-            self.superplaces[a]=self.superplaces.get(a,[])+[b]
-        elif ":" in line: # category
+            self.superplaces[a]=b
+        elif ":" in line: # category            
             a,b = line.split(":")
             a=a.strip()
             b=b.strip()
             self.categories[b]=self.categories.get(b,[])+[a]
             # TODO Names that change location
+        elif "include" in line:            
+            #print("reading from file %s" % os.path.join(self.basepath,line.split(" ")[-1].strip()[1:-1]))
+            self.from_file(os.path.join(self.basepath,line.split(" ")[-1].strip()[1:-1]),True)
         elif "@" in line: # place location ("@oldname @ 38.736347, -9.140768")
             place,loc = line.split("@")
             place = place.strip()
             a,b = loc.split(",")
             a=float(a.strip())
             b=float(b.strip())
-            self.locations[place]=[a,b]
+            self.coordinates[place]=[a,b]
 
 
+    def placename_at(self,place,date):
+        """Get name of a place at a specific date, based on existing nameswaps ("@... >> ...")"""
+        if place in self.nameswaps:
+            if self.nameswaps[place][1]>date:
+                return place
+            else:
+                return self.placename_at(self.nameswaps[place][0], date)
+        else:
+            return place
 
 
+    def current_placename(self, place):
+        """Get current name of a place, based on existing nameswaps ("@... >> ...")"""
+        return self.placename_at(place, self.days[-1].date)
+    
+
+    def update_places(self, day):
+        day = copy.deepcopy(day)
+        changes = {}
+        for p in day.all_places():
+            changes[p]=self.current_placename(p)
+        day.update_placenames(changes)
+        return day
+
+        
+    def update_to_superplaces(self, day):
+        day = copy.deepcopy(day)
+        changes = {}
+        for p in day.all_places():
+            changes[p]=self.superplaces_of(p)        
+        day.update_placenames(changes)
+        return day
+
+
+    # From MySteps. TODO: make sure this honors all comments, meta, etc. (apparently only the days)
+    def __repr__(self):
+        """Converts LIFE object to LIFE format string"""
+        #TODO add categories, subplaces, nameswaps...
+        days = []
+        self.days.sort()
+
+        for day in self.days:
+            days.append(repr(day) + '\n')
+        
+        return ''.join(days)
+
+
+    #CHECK IF BROKEN! NOW A PLACE CAN ONLY HAVE ONE SUPERPLACE
     def subplaces_of(self,place, recursive = True):
         """Get list of all subplaces of a place. The 'recursive' parameter
         (default True) defines whether we get only the direct subplaces of the
         entire hierarchy."""
         if place:
-            if recursive:
+            if not recursive:
                 return self.subplaces.get(place,[])
             else:
                 tmp = self.subplaces.get(place,[])
@@ -216,14 +330,14 @@ class Life:
         (default True) defines whether we get only the direct superplaces of the
         entire hierarchy."""
         if place:
-            if recursive:
-                return self.superplaces.get(place,[])
-            else:
-                tmp = self.superplaces.get(place,[])
-                res = tmp
-                for x in tmp:
-                    res=unique(res+self.superplaces_of(x,False))
-                return res
+            if not recursive:
+                return self.superplaces.get(place,place)
+            else:                
+                tmp = self.superplaces.get(place,place)
+                if tmp == place:
+                    return tmp
+                else:
+                    return self.superplaces_of(tmp, True)
         else:
             return None
 
@@ -239,7 +353,7 @@ class Life:
     def category_places(self,cat):
         """returns list of all the places with a given category"""
         return self.categories.get(cat,[])
-
+    
 
     def all_places(self):
         """returns list of all visited places"""
@@ -280,17 +394,17 @@ class Life:
         of minutes
         """
         tmp = []
-        places = self.time_at_all_places()
+        places = self.time_at_all_places()        
         for p in places.keys():
             tmp.append((p,places[p]))
         tmp.sort((lambda x,y: cmp(x[1] ,y[1])))
         return tmp
 
 
-    def location_for(self,place):
+    def coordinates_for(self,place):
         """returns [lat,lon] for a given place, if known (None otherwise)"""
-        if self.locations.has_key(place.lower()):
-            return self.locations[place.lower()]
+        if place.lower() in self.coordinates:
+            return self.coordinates[place.lower()]
         else:
             return None
 
@@ -319,7 +433,7 @@ class Life:
         return total, total/1440.0
 
 
-    def when_at(self, place, strict = True, recursive = False):
+    def when_at(self, place, strict = True, recursive = False, exact_match = False):
         """Returns list of spans for when I was at a given place.
         If strict==True (default) it checks only the actual place. If it is
         False, it checks all subplaces as well. In that case, the 'recursive'
@@ -332,7 +446,7 @@ class Life:
             places = unique([place]+self.subplaces_of(place,recursive))
         for d in self.days:
             for place in places:
-                tmp = d.when_at(place)
+                tmp = d.when_at(place, exact_match)
                 if tmp:
                     res=res+tmp
         return res
@@ -387,6 +501,26 @@ class Life:
                 res=res+[(d, d.with_semantics(sem,exact))]
         return res
 
+    # From MySteps. Probably incomplete for the latest LIFE format...
+    def to_json(self):
+        """Returns JSON object that represents the LIFE file"""
+
+        life = {
+            "categories": self.categories,
+            "subplaces": self.subplaces,
+            "superplaces": self.superplaces,
+            "nameswaps": self.nameswaps,
+            "locationswaps": self.locationswaps,
+            "coordinates": self.coordinates,
+            "days": []
+        }
+
+        self.days.sort()
+                
+        for day in self.days:
+            life["days"].append(day.to_json())
+
+        return life
 
 
 ############################################################
@@ -397,11 +531,15 @@ class Day:
     """One day (set of spans"""
     def __init__(self, date):
         self.date = date
+        self.notes = ""
         self.spans = []
 
     def add_span(self,span):
         """Adds a span to the day"""
         self.spans.append(span)
+
+    def add_note(self,note):
+        self.notes=self.notes+note+"\n"
 
     def all_places(self):
         """dictionary with keys for all places visited in the day, vith the
@@ -414,6 +552,20 @@ class Day:
             else:
                 res[s.place] = res.get(s.place,0)+s.length()
         return res
+
+
+    def __lt__(self, other):
+        return self.date < other.date
+
+
+    def __iter__(self):
+        for s in self.spans:
+            yield s
+
+
+    def update_placenames(self, substs):
+        for s in self.spans:
+            s.update_placenames(substs)
 
 
     def somewhere(self,exclude_travel=True):
@@ -432,11 +584,11 @@ class Day:
         return 24*60-self.somewhere()
 
 
-    def when_at(self,place):
+    def when_at(self,place, exact_match = False):
         """returns list of spans for when I was at a particular place"""
         res = []
         for s in self.spans:
-            if s.when_at(place):
+            if s.when_at(place, exact_match):
                 res.append(s)
         return res
 
@@ -448,9 +600,9 @@ class Day:
                 return s.place
         return None
 
-    def total_at(self,place):
+    def total_at(self,place, exact_match = False):
         """Returns total number of minutes at a given place"""
-        return sum([x.length() for x in self.when_at(place)])
+        return sum([x.length()+1 for x in self.when_at(place,exact_match)])
 
 
     def with_tag(self,tag,exact = True):
@@ -489,9 +641,27 @@ class Day:
         return res
 
 
+    def to_json(self):
+        """Returns a JSON object that represents the day"""
+        
+        day = {
+            "date": '--'+self.date,
+            "spans": [],
+            "notes": self.notes,
+            "start_timezone": timezone_from_offset(self.spans[0].start_timezone) if self.spans[0].start_timezone==self.spans[0].end_timezone else None
+        }
+        
+        for s in self.spans:
+            day["spans"].append(s.to_json())
+
+        return day
+
+
+
     def __repr__(self):
-        tmp = self.date #+"\n"
-        return tmp
+        tmp = "--"+self.date +"\n"
+        if self.spans[0].start_timezone==self.spans[0].end_timezone:
+            tmp += "%s\n" % timezone_from_offset(self.spans[0].start_timezone)
         for s in self.spans:
             tmp+=str(s)+"\n"
         return tmp
@@ -520,11 +690,12 @@ class Span:
             self.place=(self.place.split("->")[0].strip(),self.place.split("->")[1].strip())
             # if a single place, store string. If 'indoors trip', add list of [start,end]
             # That will be a 'multiplace'
-        if type(timezone)==list:
+        if type(timezone)==list: 
             self.start_timezone=timezone_offset(timezone[0])
             self.end_timezone=timezone_offset(timezone[1])
         else:
-            self.start_timezone=self.end_timezone=timezone_offset(timezone)
+            self.start_timezone=self.end_timezone=timezone_offset(timezone)        
+
 
 
     def parse_place(self,to_parse):
@@ -533,35 +704,37 @@ class Span:
         context = ""
         self.tags=""
         self.semantics=""
-        self.place = ""
+        self.place=""
         for c in to_parse:
             if c=="[":
                 if acc:
-                    self.place=acc
+                    if context=="":
+                        self.place=acc
                     acc=""
                 context = "["
             elif c=="{":
                 if acc:
-                    self.place=acc
+                    if context=="":
+                        self.place=acc
                     acc=""
                 context = "{"
             elif c=="]":
                 if context=="[":
                     self.tags=acc
-                    context=""
+                    context="."
                     acc=""
                 else:
                     acc=acc+c
             elif c=="}":
                 if context=="{":
                     self.semantics=acc
-                    context=""
+                    context="."
                     acc=""
                 else:
                     acc=acc+c
             else:
                 acc=acc+c
-        if acc:
+        if acc:            
             self.place=acc
         if self.tags=="":
             self.tags=[]
@@ -571,14 +744,19 @@ class Span:
             self.semantics=[]
         else:
             self.semantics=[x.strip() for x in self.semantics.split("|")]
-
-        if self.place:
-            self.place = self.place.strip()
+        self.place = self.place.strip()
 
 
     def multiplace(self):
         """Return true if span contains 'indoor trip', False otherwise."""
         return type(self.place)==tuple
+
+
+    def update_placenames(self, substs):
+        if self.multiplace():
+            self.place=(substs[self.place[0]],substs[self.place[1]])
+        else:
+            self.place=substs[self.place]
 
 
     def has_tag(self,tag, exact = True):
@@ -605,13 +783,15 @@ class Span:
             return False
 
 
-    def when_at(self,place):
+    def when_at(self,place, exact_match = False):
         """Returns True if I was at a given place in this span, False otherwise."""
         if self.multiplace():
-            return self.place[0]==place or self.place[1]==place
+            return self.place[0]==place or self.place[1]==place or \
+                   (not exact_match and (place in self.place[0] or place in self.place[0]))
         else:
-            return self.place==place
-
+            return self.place==place or \
+                   (not exact_match and place in self.place)
+    
 
     def length(self):
         """Return duration of span, in minutes"""
@@ -627,7 +807,7 @@ class Span:
         #print "|",x,"|", self.start,self.end, self.start_timezone
         if x<0:
             day = yesterday(self.day)
-            x=x+60*24
+            x=x+60*24            
         elif x>(60*24):
             day = tomorrow(self.day)
             x=x-60*24
@@ -640,10 +820,10 @@ class Span:
         """Return end time in UTC timezone in ISO format
         (eg: 2015-02-12T23:32:00Z)
         """
-        x = self.end-self.end_timezone*60
+        x = self.end-self.end_timezone*60        
         if x<0:
             day = yesterday(self.day)
-            x=x+60*24
+            x=x+60*24            
         elif x>(60*24):
             day = tomorrow(self.day)
             x=x-60*24
@@ -665,19 +845,55 @@ class Span:
         """
         return well_formed_date(self.day,end.start)
 
+    # From MySteps. May be incomplete for the latest LIFE format...
+    def to_json(self):
+        """Returns a JSON object that represents the span"""
+
+        return {
+            "day": self.day,
+            "start": minutes_to_military(self.start),
+            "end": minutes_to_military(self.end),
+            "tags": self.tags if self.tags else None,
+            "semantics": self.semantics if self.semantics else None,
+            "place": self.place,
+            "end_timezone": timezone_from_offset(self.end_timezone) if self.start_timezone == self.end_timezone else None
+        }
+
 
     def __repr__(self):
         if type(self.place)==tuple:
-            place = str(self.place[0])+"->"+str(self.place[1])
+            place = self.place[0]+"->"+self.place[1]
         else:
-            place = str(self.place)
+            place = self.place
         if self.start_timezone == self.end_timezone:
-            return self.day+" "+minutes_to_military(self.start)+"-"+ \
-                   minutes_to_military(self.end)+":"+place+" ("+timezone_from_offset(self.start_timezone)+")" + \
-                   "[%s]{%s}" % ("|".join(self.tags), "|".join(self.semantics))
+            return minutes_to_military(self.start)+"-"+minutes_to_military(self.end)+": "+  \
+                   place+" "+ \
+                   ("[%s]" % "|".join(self.tags) if self.tags else "") + \
+                   ("{%s}" % "|".join(self.semantics) if self.semantics else "") 
         else:
-            return self.day+" "+minutes_to_military(self.start)+"-"+ \
-                   minutes_to_military(self.end)+":"+place+" ("+timezone_from_offset(self.start_timezone)+","+timezone_from_offset(self.end_timezone)+")" + \
-                   "[%s]{%s}" % ("|".join(self.tags), "|".join(self.semantics))
+            return "@"+timezone_from_offset(self.end_timezone)+"\n"+ \
+                   minutes_to_military(self.start)+"-"+minutes_to_military(self.end)+": "+  \
+                   place+" "+ \
+                   ("[%s]" % "|".join(self.tags) if self.tags else "") + \
+                   ("{%s}" % "|".join(self.semantics) if self.semantics else "") 
 
 
+
+
+
+if __name__=="__main__":
+    l=Life("location_semantics.txt")
+    for d in l:
+        if "community day" in d.notes:
+            print(d.date)
+            
+    for s in l.days[42]:
+        print(s)
+    print(l.days[13])
+    print(l.category_of("ist"))
+    print("\n")
+    print(l.placename_at("pavilhão atlântico","2017-06-17"))
+    print(l.current_placename("sbc fórum algarve"))
+    print(l.update_to_superplaces(l.update_places(l["2011_01_22"])))
+#    for d in l:
+#        print(d)
