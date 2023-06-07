@@ -219,7 +219,7 @@ class Life:
     # TODO: From MySteps. Unsure if this works as is, most likely not. Needs to preserve comments, etc.
     def to_file(self, path):
         """Creates a file in the LIFE format"""
-        f = open(path, "w")
+        f = open(path, "w", encoding="urf8")
         f.write(repr(self))
         f.close()
 
